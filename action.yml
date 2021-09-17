@@ -1,0 +1,32 @@
+name: 'Migrate EF Database'
+description: 'This runs a database migration from our EF Schema manager'
+
+inputs:
+  nuget-rw-token:
+    description: 'Read-only nuget token, called PACKAGE_RW_GITHUB_TOKEN in Arundo'
+    required: true
+  package-path:
+    description: 'Path to Directory for library project'
+    required: true
+    default: 'src/Project'
+    
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repo
+      uses: actions/checkout@master
+
+    - name: Install .NET Core 5.0 latest
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+        source-url: https://nuget.pkg.github.com/arundo/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{ inputs.nuget-rw-token }}
+    
+    - name: publish package to Github Package Registry
+      run: |
+        cd ${{ inputs.package-path }}
+        dotnet pack -c Release -o out
+        dotnet nuget push out/*.nupkg --skip-duplicate --no-symbols true --api-key ${{ inputs.nuget-rw-token }}
+      shell: bash
